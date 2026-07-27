@@ -18,8 +18,11 @@ Dashboard + Inventario de Cerveza (registro diario, historial, ventas y comparac
    Esto agrega la lista completa de actividades recurrentes (las ~25 que me diste, por día), cortesías/merma/venta
    de tu hermana en cerveza, el estado de cada artículo de material (pérdida/aumento/sin cambio), y el recordatorio
    automático de 7 días antes del inventario mensual.
-7. Ve a **Settings → Data API** y copia el **Project URL**.
-8. Ve a **Settings → API Keys → pestaña Legacy API Keys** y copia la clave **anon / public**.
+7. Abre **New query** una quinta vez, copia y pega todo el contenido de `supabase/schema_fase5.sql` y dale **Run**.
+   Esto elimina por completo el concepto de "venta de tu hermana", agrega "ajuste manual", y corrige la fórmula
+   de comparación de cerveza (esperado = ayer − venta del sistema − cortesías − merma + ajuste).
+8. Ve a **Settings → Data API** y copia el **Project URL**.
+9. Ve a **Settings → API Keys → pestaña Legacy API Keys** y copia la clave **anon / public**.
 
 ## 2. Subir el código a GitHub
 

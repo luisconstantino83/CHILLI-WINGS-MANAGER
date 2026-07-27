@@ -21,11 +21,10 @@ export type VentaCerveza = {
   id: string;
   fecha: string;
   cerveza_id: string;
-  piezas_vendidas: number;
-  venta_hermana: number;
-  incluida_en_sistema: boolean;
+  venta_sistema: number;
   cortesias: number;
   merma: number;
+  ajuste: number;
 };
 
 export type ComparacionCerveza = {
@@ -33,12 +32,10 @@ export type ComparacionCerveza = {
   cerveza_id: string;
   cerveza_nombre: string;
   inventario_anterior: number;
-  entradas: number;
   venta_sistema: number;
-  venta_hermana: number;
-  venta_hermana_incluida: boolean;
   cortesias: number;
   merma: number;
+  ajuste: number;
   esperado: number;
   contado: number;
   diferencia: number;

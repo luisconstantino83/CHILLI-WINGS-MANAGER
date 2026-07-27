@@ -85,7 +85,10 @@ comment on column ventas_cerveza.incluida_en_sistema is 'Marca true si la venta 
 
 -- Reemplaza la vista de comparación con la fórmula completa:
 -- teórico = inicial + entradas - venta_sistema - venta_hermana(si no está incluida) - cortesías - merma
-create or replace view v_comparacion_cerveza as
+-- (drop primero porque cambiamos nombres/orden de columnas, y Postgres no
+-- permite eso con CREATE OR REPLACE VIEW, solo agregar columnas al final)
+drop view if exists v_comparacion_cerveza;
+create view v_comparacion_cerveza as
 select
   hoy.fecha,
   hoy.cerveza_id,
