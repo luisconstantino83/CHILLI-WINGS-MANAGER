@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { Card } from "@/components/Card";
-import { Save } from "lucide-react";
+import { Save, Plus } from "lucide-react";
 import type { BarraItem, BarraInventario } from "@/lib/types";
 
 function todayISO() {
@@ -26,6 +26,31 @@ export default function BarraPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState("");
+
+  const [nuevoNombre, setNuevoNombre] = useState("");
+  const [nuevaCategoria, setNuevaCategoria] = useState("otro");
+  const [nuevaUnidad, setNuevaUnidad] = useState("pieza");
+  const [agregando, setAgregando] = useState(false);
+
+  async function agregarProducto() {
+    if (!nuevoNombre.trim()) return;
+    setAgregando(true);
+    const { data, error } = await supabase
+      .from("barra_items")
+      .insert({
+        nombre: nuevoNombre.trim(),
+        categoria: nuevaCategoria,
+        unidad: nuevaUnidad,
+        orden: items.length + 1,
+      })
+      .select()
+      .single();
+    if (!error && data) {
+      setItems((prev) => [...prev, data]);
+      setNuevoNombre("");
+    }
+    setAgregando(false);
+  }
 
   useEffect(() => {
     async function load() {
@@ -124,6 +149,48 @@ export default function BarraPage() {
           </Card>
         ))
       )}
+
+      <Card>
+        <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wide text-neutral-400">
+          Agregar producto nuevo
+        </h2>
+        <div className="flex flex-wrap gap-2">
+          <input
+            placeholder="Nombre del producto"
+            value={nuevoNombre}
+            onChange={(e) => setNuevoNombre(e.target.value)}
+            className="min-w-[180px] flex-1 rounded-md border border-base-700 bg-base-900 px-3 py-1.5 text-sm text-neutral-100 focus:border-chilli"
+          />
+          <select
+            value={nuevaCategoria}
+            onChange={(e) => setNuevaCategoria(e.target.value)}
+            className="rounded-md border border-base-700 bg-base-900 px-2 py-1.5 text-sm text-neutral-100"
+          >
+            <option value="licor">Licor</option>
+            <option value="jarabe">Jarabe</option>
+            <option value="jugo">Jugo</option>
+            <option value="fruta">Fruta / fresco</option>
+            <option value="otro">Otro</option>
+          </select>
+          <select
+            value={nuevaUnidad}
+            onChange={(e) => setNuevaUnidad(e.target.value)}
+            className="rounded-md border border-base-700 bg-base-900 px-2 py-1.5 text-sm text-neutral-100"
+          >
+            <option value="pieza">pieza</option>
+            <option value="l">litros</option>
+            <option value="ml">ml</option>
+            <option value="oz">oz</option>
+          </select>
+          <button
+            onClick={agregarProducto}
+            disabled={agregando}
+            className="flex items-center gap-2 rounded-md bg-chilli px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+          >
+            <Plus size={14} /> Agregar
+          </button>
+        </div>
+      </Card>
     </div>
   );
 }
