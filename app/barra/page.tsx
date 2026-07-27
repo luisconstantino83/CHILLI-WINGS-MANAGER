@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { Card } from "@/components/Card";
-import { Save, Plus } from "lucide-react";
+import { Save, Plus, ArrowRight } from "lucide-react";
+import Link from "next/link";
 import type { BarraItem, BarraInventario } from "@/lib/types";
 
 function todayISO() {
@@ -92,8 +93,11 @@ export default function BarraPage() {
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-semibold text-white">Inventario de barra</h1>
-          <p className="text-sm text-neutral-500">Licores, jarabes, jugos y fresco — admite decimales</p>
+          <h1 className="font-display text-2xl font-semibold text-white">Inventario semanal de barra</h1>
+          <p className="text-sm text-neutral-500">Licores, jarabes, jugos y fresco — se hace los jueves, admite decimales</p>
+          <Link href="/barra/movimientos" className="mt-1 flex items-center gap-1 text-xs text-chilli-light hover:underline">
+            Ir a movimientos diarios (entradas, consumo, merma) <ArrowRight size={12} />
+          </Link>
         </div>
         <div className="flex items-center gap-3">
           <input

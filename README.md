@@ -10,8 +10,16 @@ Dashboard + Inventario de Cerveza (registro diario, historial, ventas y comparac
    Esto crea las tablas de cerveza, la vista de comparación y las actividades del dashboard.
 4. Abre **New query** otra vez, copia y pega todo el contenido de `supabase/schema_fase2.sql` y dale **Run**.
    Esto agrega Barra, Postres, Material, Personal y Checklists.
-5. Ve a **Settings → Data API** y copia el **Project URL**.
-6. Ve a **Settings → API Keys → pestaña Legacy API Keys** y copia la clave **anon / public**.
+5. Abre **New query** una tercera vez, copia y pega todo el contenido de `supabase/schema_fase3.sql` y dale **Run**.
+   **Este paso es crítico**: activa las políticas de seguridad (RLS) que permiten que la app lea y escriba datos —
+   sin esto, las páginas se ven vacías aunque las tablas existan. También agrega Reservaciones, el control diario
+   de movimientos de barra, y precarga tu inventario real de material.
+6. Abre **New query** una cuarta vez, copia y pega todo el contenido de `supabase/schema_fase4.sql` y dale **Run**.
+   Esto agrega la lista completa de actividades recurrentes (las ~25 que me diste, por día), cortesías/merma/venta
+   de tu hermana en cerveza, el estado de cada artículo de material (pérdida/aumento/sin cambio), y el recordatorio
+   automático de 7 días antes del inventario mensual.
+7. Ve a **Settings → Data API** y copia el **Project URL**.
+8. Ve a **Settings → API Keys → pestaña Legacy API Keys** y copia la clave **anon / public**.
 
 ## 2. Subir el código a GitHub
 

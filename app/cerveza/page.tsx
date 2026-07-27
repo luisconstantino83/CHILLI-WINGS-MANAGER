@@ -23,13 +23,29 @@ type Fila = {
   barra: number;
 };
 
+type FilaVenta = {
+  piezas_vendidas: number;
+  venta_hermana: number;
+  incluida_en_sistema: boolean;
+  cortesias: number;
+  merma: number;
+};
+
+const filaVentaVacia: FilaVenta = {
+  piezas_vendidas: 0,
+  venta_hermana: 0,
+  incluida_en_sistema: false,
+  cortesias: 0,
+  merma: 0,
+};
+
 export default function CervezaPage() {
   const supabase = useMemo(() => createClient(), []);
   const [fecha, setFecha] = useState(todayISO());
   const [cervezas, setCervezas] = useState<Cerveza[]>([]);
   const [filas, setFilas] = useState<Record<string, Fila>>({});
   const [ayerTotales, setAyerTotales] = useState<Record<string, number>>({});
-  const [ventas, setVentas] = useState<Record<string, number>>({});
+  const [ventas, setVentas] = useState<Record<string, FilaVenta>>({});
   const [comparaciones, setComparaciones] = useState<ComparacionCerveza[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -72,9 +88,15 @@ export default function CervezaPage() {
       });
       setAyerTotales(ayerMap);
 
-      const ventaMap: Record<string, number> = {};
+      const ventaMap: Record<string, FilaVenta> = {};
       (vts as VentaCerveza[] | null)?.forEach((v) => {
-        ventaMap[v.cerveza_id] = v.piezas_vendidas;
+        ventaMap[v.cerveza_id] = {
+          piezas_vendidas: v.piezas_vendidas,
+          venta_hermana: v.venta_hermana,
+          incluida_en_sistema: v.incluida_en_sistema,
+          cortesias: v.cortesias,
+          merma: v.merma,
+        };
       });
       setVentas(ventaMap);
 
@@ -87,6 +109,17 @@ export default function CervezaPage() {
   function updateFila(id: string, campo: keyof Fila, valor: string) {
     const num = valor === "" ? 0 : parseFloat(valor);
     setFilas((prev) => ({ ...prev, [id]: { ...prev[id], [campo]: isNaN(num) ? 0 : num } }));
+  }
+
+  function updateVenta(id: string, campo: keyof FilaVenta, valor: string | boolean) {
+    setVentas((prev) => {
+      const actual = prev[id] ?? filaVentaVacia;
+      if (typeof valor === "boolean") {
+        return { ...prev, [id]: { ...actual, [campo]: valor } };
+      }
+      const num = valor === "" ? 0 : parseFloat(valor);
+      return { ...prev, [id]: { ...actual, [campo]: isNaN(num) ? 0 : num } };
+    });
   }
 
   function totalFila(f: Fila) {
@@ -108,12 +141,21 @@ export default function CervezaPage() {
       .from("inventario_cerveza")
       .upsert(rows, { onConflict: "fecha,cerveza_id" });
 
-    const ventaRows = cervezas
-      .filter((c) => ventas[c.id] !== undefined)
-      .map((c) => ({ fecha, cerveza_id: c.id, piezas_vendidas: ventas[c.id] ?? 0 }));
-    if (ventaRows.length) {
-      await supabase.from("ventas_cerveza").upsert(ventaRows, { onConflict: "fecha,cerveza_id" });
-    }
+    const ventaRows = cervezas.map((c) => {
+      const v = ventas[c.id] ?? filaVentaVacia;
+      return {
+        fecha,
+        cerveza_id: c.id,
+        piezas_vendidas: v.piezas_vendidas,
+        venta_hermana: v.venta_hermana,
+        incluida_en_sistema: v.incluida_en_sistema,
+        cortesias: v.cortesias,
+        merma: v.merma,
+      };
+    });
+    const { error: errorVentas } = await supabase
+      .from("ventas_cerveza")
+      .upsert(ventaRows, { onConflict: "fecha,cerveza_id" });
 
     const { data: comp } = await supabase
       .from("v_comparacion_cerveza")
@@ -122,7 +164,11 @@ export default function CervezaPage() {
     setComparaciones(comp ?? []);
 
     setSaving(false);
-    setSavedMsg(error ? "Error al guardar." : "Inventario guardado ✓");
+    setSavedMsg(
+      error || errorVentas
+        ? `Error al guardar: ${(error || errorVentas)?.message}`
+        : "Inventario y ventas guardados ✓"
+    );
   }
 
   return (
@@ -157,8 +203,9 @@ export default function CervezaPage() {
       )}
 
       <Card>
+        <h2 className="mb-3 font-display text-sm font-semibold text-white">Conteo físico</h2>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-sm">
+          <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-base-800 text-left text-xs uppercase tracking-wide text-neutral-500">
                 <th className="py-2 pr-3">Cerveza</th>
@@ -168,13 +215,12 @@ export default function CervezaPage() {
                 <th className="px-2 py-2">Barra</th>
                 <th className="px-2 py-2">Total</th>
                 <th className="px-2 py-2">vs. ayer</th>
-                <th className="px-2 py-2">Ventas del día</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-6 text-center text-neutral-500">
+                  <td colSpan={7} className="py-6 text-center text-neutral-500">
                     Cargando…
                   </td>
                 </tr>
@@ -217,25 +263,86 @@ export default function CervezaPage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-2 py-1.5">
-                        <input
-                          type="number"
-                          step="1"
-                          value={ventas[c.id] ?? ""}
-                          onChange={(e) =>
-                            setVentas((prev) => ({
-                              ...prev,
-                              [c.id]: e.target.value === "" ? 0 : parseFloat(e.target.value),
-                            }))
-                          }
-                          placeholder="0"
-                          className="w-16 rounded-md border border-base-700 bg-base-900 px-2 py-1 text-neutral-100 focus:border-chilli"
-                        />
-                      </td>
                     </tr>
                   );
                 })
               )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      <Card>
+        <h2 className="mb-1 font-display text-sm font-semibold text-white">Ventas y ajustes del día</h2>
+        <p className="mb-3 text-xs text-neutral-500">
+          Captura la venta del sistema y, aparte, la que te informa tu hermana. Marca &quot;incluida&quot;
+          solo si esa venta YA está contada dentro de la del sistema — así no se resta doble.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] text-sm">
+            <thead>
+              <tr className="border-b border-base-800 text-left text-xs uppercase tracking-wide text-neutral-500">
+                <th className="py-2 pr-3">Cerveza</th>
+                <th className="px-2 py-2">Venta sistema</th>
+                <th className="px-2 py-2">Venta de tu hermana</th>
+                <th className="px-2 py-2">¿Ya incluida?</th>
+                <th className="px-2 py-2">Cortesías</th>
+                <th className="px-2 py-2">Merma</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cervezas.map((c) => {
+                const v = ventas[c.id] ?? filaVentaVacia;
+                return (
+                  <tr key={c.id} className="border-b border-base-800/60">
+                    <td className="py-1.5 pr-3 text-neutral-200">{c.nombre}</td>
+                    <td className="px-2 py-1.5">
+                      <input
+                        type="number"
+                        step="1"
+                        value={v.piezas_vendidas}
+                        onChange={(e) => updateVenta(c.id, "piezas_vendidas", e.target.value)}
+                        className="w-16 rounded-md border border-base-700 bg-base-900 px-2 py-1 text-neutral-100 focus:border-chilli"
+                      />
+                    </td>
+                    <td className="px-2 py-1.5">
+                      <input
+                        type="number"
+                        step="1"
+                        value={v.venta_hermana}
+                        onChange={(e) => updateVenta(c.id, "venta_hermana", e.target.value)}
+                        className="w-16 rounded-md border border-base-700 bg-base-900 px-2 py-1 text-neutral-100 focus:border-chilli"
+                      />
+                    </td>
+                    <td className="px-2 py-1.5 text-center">
+                      <input
+                        type="checkbox"
+                        checked={v.incluida_en_sistema}
+                        onChange={(e) => updateVenta(c.id, "incluida_en_sistema", e.target.checked)}
+                        className="h-4 w-4 accent-chilli"
+                      />
+                    </td>
+                    <td className="px-2 py-1.5">
+                      <input
+                        type="number"
+                        step="1"
+                        value={v.cortesias}
+                        onChange={(e) => updateVenta(c.id, "cortesias", e.target.value)}
+                        className="w-14 rounded-md border border-base-700 bg-base-900 px-2 py-1 text-neutral-100 focus:border-chilli"
+                      />
+                    </td>
+                    <td className="px-2 py-1.5">
+                      <input
+                        type="number"
+                        step="1"
+                        value={v.merma}
+                        onChange={(e) => updateVenta(c.id, "merma", e.target.value)}
+                        className="w-14 rounded-md border border-base-700 bg-base-900 px-2 py-1 text-neutral-100 focus:border-chilli"
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -251,13 +358,15 @@ export default function CervezaPage() {
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[600px] text-sm">
+            <table className="w-full min-w-[700px] text-sm">
               <thead>
                 <tr className="border-b border-base-800 text-left text-xs uppercase tracking-wide text-neutral-500">
                   <th className="py-2 pr-3">Cerveza</th>
                   <th className="px-2 py-2">Inv. anterior</th>
                   <th className="px-2 py-2">Entradas</th>
-                  <th className="px-2 py-2">Ventas</th>
+                  <th className="px-2 py-2">Venta sist.</th>
+                  <th className="px-2 py-2">Venta hna.</th>
+                  <th className="px-2 py-2">Cort./Merma</th>
                   <th className="px-2 py-2">Esperado</th>
                   <th className="px-2 py-2">Contado</th>
                   <th className="px-2 py-2">Resultado</th>
@@ -269,7 +378,11 @@ export default function CervezaPage() {
                     <td className="py-1.5 pr-3 font-medium text-neutral-200">{c.cerveza_nombre}</td>
                     <td className="px-2 py-1.5 text-neutral-400">{c.inventario_anterior}</td>
                     <td className="px-2 py-1.5 text-neutral-400">{c.entradas}</td>
-                    <td className="px-2 py-1.5 text-neutral-400">{c.ventas}</td>
+                    <td className="px-2 py-1.5 text-neutral-400">{c.venta_sistema}</td>
+                    <td className="px-2 py-1.5 text-neutral-400">
+                      {c.venta_hermana}{c.venta_hermana_incluida ? " (incl.)" : ""}
+                    </td>
+                    <td className="px-2 py-1.5 text-neutral-400">{c.cortesias}/{c.merma}</td>
                     <td className="px-2 py-1.5 font-mono text-neutral-200">{c.esperado}</td>
                     <td className="px-2 py-1.5 font-mono text-white">{c.contado}</td>
                     <td className="px-2 py-1.5">

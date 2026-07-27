@@ -22,6 +22,10 @@ export type VentaCerveza = {
   fecha: string;
   cerveza_id: string;
   piezas_vendidas: number;
+  venta_hermana: number;
+  incluida_en_sistema: boolean;
+  cortesias: number;
+  merma: number;
 };
 
 export type ComparacionCerveza = {
@@ -30,7 +34,11 @@ export type ComparacionCerveza = {
   cerveza_nombre: string;
   inventario_anterior: number;
   entradas: number;
-  ventas: number;
+  venta_sistema: number;
+  venta_hermana: number;
+  venta_hermana_incluida: boolean;
+  cortesias: number;
+  merma: number;
   esperado: number;
   contado: number;
   diferencia: number;
@@ -39,6 +47,10 @@ export type ComparacionCerveza = {
 export type ActividadCatalogo = {
   id: string;
   nombre: string;
+  descripcion: string | null;
+  area: string | null;
+  hora_sugerida: string | null;
+  prioridad: "baja" | "normal" | "alta";
   dias_semana: number[];
   activo: boolean;
   orden: number;
@@ -49,6 +61,7 @@ export type ActividadCompletada = {
   actividad_id: string;
   fecha: string;
   hora: string;
+  observaciones: string | null;
 };
 
 // ---------- Fase 2 ----------
@@ -113,6 +126,8 @@ export type MaterialMensual = {
   cantidad_actual: number;
   cantidad_mes_anterior: number | null;
   diferencia: number;
+  porcentaje_diferencia: number;
+  estado: "sin_historial" | "sin_cambio" | "perdida" | "aumento" | "requiere_revision";
 };
 
 export type Empleado = {
@@ -150,4 +165,54 @@ export type ChecklistCompletado = {
   item_id: string;
   fecha: string;
   hora: string;
+};
+
+// ---------- Fase 3 ----------
+
+export type Reservacion = {
+  id: string;
+  cliente_nombre: string;
+  telefono: string | null;
+  fecha: string;
+  hora: string;
+  personas: number;
+  area: string;
+  mesa: string | null;
+  motivo: string | null;
+  notas: string | null;
+  estatus: "pendiente" | "confirmada" | "presente" | "no_presento" | "cancelada";
+  registrado_por: string | null;
+};
+
+export type MovimientoBarraDiario = {
+  id: string;
+  fecha: string;
+  item_id: string;
+  existencia_inicial: number;
+  entradas: number;
+  bajada_almacen: number;
+  consumo: number;
+  merma: number;
+  ajuste: number;
+  existencia_final_contada: number | null;
+  existencia_teorica: number;
+  responsable: string | null;
+  observaciones: string | null;
+};
+
+export type MaterialProximoInventario = {
+  ultimo_inventario: string | null;
+  proximo_inventario: string | null;
+  alerta_activa: boolean;
+};
+
+export type UltimoInventarioCerveza = {
+  fecha: string;
+  cervezas_contadas: number;
+  total_piezas: number;
+};
+
+export type UltimoInventarioBarraSemanal = {
+  fecha: string;
+  productos_contados: number;
 };

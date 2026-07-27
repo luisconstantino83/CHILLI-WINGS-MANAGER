@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Beer, GlassWater, IceCreamCone, Boxes, Users, ClipboardList, FileBarChart } from "lucide-react";
+import { LayoutDashboard, Beer, GlassWater, IceCreamCone, Boxes, Users, ClipboardList, FileBarChart, CalendarCheck } from "lucide-react";
 import clsx from "clsx";
 
 const items = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, enabled: true },
+  { href: "/reservas", label: "Reservas", icon: CalendarCheck, enabled: true },
   { href: "/cerveza", label: "Cerveza", icon: Beer, enabled: true },
   { href: "/barra", label: "Barra", icon: GlassWater, enabled: true },
   { href: "/postres", label: "Postres", icon: IceCreamCone, enabled: true },

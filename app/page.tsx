@@ -4,9 +4,21 @@ import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { Card, StatCard } from "@/components/Card";
 import ComparisonBadge from "@/components/ComparisonBadge";
-import { Check, Circle, Clock } from "lucide-react";
+import { Check, Circle, Clock, ArrowDown, ArrowUp, CalendarCheck, AlertTriangle, Boxes } from "lucide-react";
 import clsx from "clsx";
-import type { ActividadCatalogo, ActividadCompletada, ComparacionCerveza } from "@/lib/types";
+import type {
+  ActividadCatalogo,
+  ActividadCompletada,
+  ComparacionCerveza,
+  Reservacion,
+  PostreItem,
+  Empleado,
+  ChecklistItem,
+  ChecklistCompletado,
+  MaterialProximoInventario,
+  UltimoInventarioCerveza,
+  UltimoInventarioBarraSemanal,
+} from "@/lib/types";
 
 const FRASES = [
   "Un restaurante ordenado se nota en cada mesa.",
@@ -25,6 +37,14 @@ export default function DashboardPage() {
   const [actividades, setActividades] = useState<ActividadCatalogo[]>([]);
   const [completadas, setCompletadas] = useState<ActividadCompletada[]>([]);
   const [comparaciones, setComparaciones] = useState<ComparacionCerveza[]>([]);
+  const [reservaciones, setReservaciones] = useState<Reservacion[]>([]);
+  const [postresBajos, setPostresBajos] = useState<{ nombre: string; cantidad: number }[]>([]);
+  const [personal, setPersonal] = useState<Empleado[]>([]);
+  const [checklistPendientes, setChecklistPendientes] = useState(0);
+  const [checklistTotal, setChecklistTotal] = useState(0);
+  const [materialProximo, setMaterialProximo] = useState<MaterialProximoInventario | null>(null);
+  const [ultimaCerveza, setUltimaCerveza] = useState<UltimoInventarioCerveza | null>(null);
+  const [ultimaBarra, setUltimaBarra] = useState<UltimoInventarioBarraSemanal | null>(null);
   const [loading, setLoading] = useState(true);
   const frase = useMemo(() => FRASES[new Date().getDate() % FRASES.length], []);
 
@@ -39,15 +59,59 @@ export default function DashboardPage() {
       const hoy = todayISO();
       const diaSemana = new Date().getDay();
 
-      const [{ data: cat }, { data: comp }, { data: cmpz }] = await Promise.all([
+      const [
+        { data: cat },
+        { data: comp },
+        { data: cmpz },
+        { data: reservas },
+        { data: postres },
+        { data: postresInv },
+        { data: empleados },
+        ,
+        { data: checklistItems },
+        { data: checklistComp },
+        { data: matProximo },
+        { data: cervezaUltima },
+        { data: barraUltima },
+      ] = await Promise.all([
         supabase.from("actividades_catalogo").select("*").eq("activo", true).order("orden"),
         supabase.from("actividades_completadas").select("*").eq("fecha", hoy),
         supabase.from("v_comparacion_cerveza").select("*").eq("fecha", hoy),
+        supabase.from("reservaciones").select("*").eq("fecha", hoy).order("hora"),
+        supabase.from("postres_items").select("*").eq("activo", true),
+        supabase.from("postres_inventario").select("item_id,cantidad").eq("fecha", hoy),
+        supabase.from("empleados").select("*").eq("activo", true).order("nombre"),
+        supabase.from("checklist_tipos").select("*"),
+        supabase.from("checklist_items").select("*").eq("activo", true),
+        supabase.from("checklist_completados").select("*").eq("fecha", hoy),
+        supabase.from("v_material_proximo_inventario").select("*").maybeSingle(),
+        supabase.from("v_ultimo_inventario_cerveza").select("*").maybeSingle(),
+        supabase.from("v_ultimo_inventario_barra_semanal").select("*").maybeSingle(),
       ]);
 
       setActividades((cat ?? []).filter((a) => a.dias_semana.includes(diaSemana)));
       setCompletadas(comp ?? []);
       setComparaciones(cmpz ?? []);
+      setReservaciones(reservas ?? []);
+      setPersonal(empleados ?? []);
+      setMaterialProximo(matProximo ?? null);
+      setUltimaCerveza(cervezaUltima ?? null);
+      setUltimaBarra(barraUltima ?? null);
+
+      const totalItems = (checklistItems as ChecklistItem[] | null)?.length ?? 0;
+      const hechosItems = (checklistComp as ChecklistCompletado[] | null)?.length ?? 0;
+      setChecklistTotal(totalItems);
+      setChecklistPendientes(Math.max(totalItems - hechosItems, 0));
+
+      const invMap: Record<string, number> = {};
+      (postresInv as { item_id: string; cantidad: number }[] | null)?.forEach(
+        (i) => (invMap[i.item_id] = i.cantidad)
+      );
+      const bajos = ((postres as PostreItem[]) ?? [])
+        .filter((p) => (invMap[p.id] ?? 0) <= p.umbral_alerta)
+        .map((p) => ({ nombre: p.nombre, cantidad: invMap[p.id] ?? 0 }));
+      setPostresBajos(bajos);
+
       setLoading(false);
     }
     load();
@@ -194,6 +258,92 @@ export default function DashboardPage() {
                 >
                   <span className="text-sm text-neutral-200">{c.cerveza_nombre}</span>
                   <ComparisonBadge diferencia={c.diferencia} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
+
+      {/* Recordatorios y resúmenes rápidos */}
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <StatCard
+          label="Personal activo"
+          value={String(personal.length)}
+          sub={personal.slice(0, 2).map((p) => p.nombre).join(", ") || "sin empleados"}
+        />
+        <StatCard
+          label="Checklists pendientes"
+          value={`${checklistPendientes}/${checklistTotal}`}
+          tone={checklistPendientes === 0 && checklistTotal > 0 ? "good" : "neutral"}
+        />
+        <StatCard
+          label="Último inventario cerveza"
+          value={ultimaCerveza ? ultimaCerveza.fecha : "—"}
+          sub={ultimaCerveza ? `${ultimaCerveza.cervezas_contadas} productos` : "sin registros"}
+        />
+        <StatCard
+          label="Últ. inventario barra semanal"
+          value={ultimaBarra ? ultimaBarra.fecha : "—"}
+          sub={ultimaBarra ? `${ultimaBarra.productos_contados} productos` : "sin registros"}
+        />
+      </div>
+
+      {materialProximo?.alerta_activa && (
+        <Card className="border-warn/40">
+          <div className="flex items-center gap-2 text-sm text-warn">
+            <Boxes size={16} />
+            <span className="font-medium">Se acerca el inventario mensual de material</span>
+            <span className="text-neutral-400">
+              — próximo: {materialProximo.proximo_inventario}
+            </span>
+          </div>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Reservations today */}
+        <Card>
+          <h2 className="mb-4 font-display text-base font-semibold text-white">
+            Reservaciones de hoy
+          </h2>
+          {loading ? (
+            <p className="text-sm text-neutral-500">Cargando…</p>
+          ) : reservaciones.length === 0 ? (
+            <p className="text-sm text-neutral-500">No hay reservaciones registradas para hoy.</p>
+          ) : (
+            <ul className="space-y-2">
+              {reservaciones.map((r) => (
+                <li key={r.id} className="flex items-center justify-between rounded-lg bg-base-800/60 px-3 py-2">
+                  <span className="flex items-center gap-2 text-sm text-neutral-200">
+                    <CalendarCheck size={14} className="text-neutral-500" />
+                    {r.hora.slice(0, 5)} · {r.cliente_nombre}
+                  </span>
+                  <span className="text-xs text-neutral-500">{r.personas}p · Área {r.area}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
+        {/* Low stock desserts */}
+        <Card>
+          <h2 className="mb-4 font-display text-base font-semibold text-white">
+            Postres por agotarse
+          </h2>
+          {loading ? (
+            <p className="text-sm text-neutral-500">Cargando…</p>
+          ) : postresBajos.length === 0 ? (
+            <p className="text-sm text-ok">Niveles de postres bien surtidos.</p>
+          ) : (
+            <ul className="space-y-2">
+              {postresBajos.map((p) => (
+                <li key={p.nombre} className="flex items-center justify-between rounded-lg bg-chilli/10 px-3 py-2">
+                  <span className="flex items-center gap-2 text-sm text-neutral-200">
+                    <AlertTriangle size={14} className="text-chilli-light" />
+                    {p.nombre}
+                  </span>
+                  <span className="text-xs text-chilli-light">{p.cantidad} pzas</span>
                 </li>
               ))}
             </ul>

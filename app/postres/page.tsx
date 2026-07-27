@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { Card } from "@/components/Card";
-import { Save, AlertTriangle } from "lucide-react";
+import { Save, AlertTriangle, Plus } from "lucide-react";
 import clsx from "clsx";
 import type { PostreItem, PostreInventario } from "@/lib/types";
 
@@ -20,6 +20,25 @@ export default function PostresPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState("");
+
+  const [nuevoNombre, setNuevoNombre] = useState("");
+  const [nuevoUmbral, setNuevoUmbral] = useState(3);
+  const [agregando, setAgregando] = useState(false);
+
+  async function agregarProducto() {
+    if (!nuevoNombre.trim()) return;
+    setAgregando(true);
+    const { data, error } = await supabase
+      .from("postres_items")
+      .insert({ nombre: nuevoNombre.trim(), umbral_alerta: nuevoUmbral, orden: items.length + 1 })
+      .select()
+      .single();
+    if (!error && data) {
+      setItems((prev) => [...prev, data]);
+      setNuevoNombre("");
+    }
+    setAgregando(false);
+  }
 
   useEffect(() => {
     async function load() {
@@ -142,6 +161,37 @@ export default function PostresPage() {
             })}
           </ul>
         )}
+      </Card>
+
+      <Card>
+        <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wide text-neutral-400">
+          Agregar postre nuevo
+        </h2>
+        <div className="flex flex-wrap gap-2">
+          <input
+            placeholder="Nombre del postre"
+            value={nuevoNombre}
+            onChange={(e) => setNuevoNombre(e.target.value)}
+            className="min-w-[180px] flex-1 rounded-md border border-base-700 bg-base-900 px-3 py-1.5 text-sm text-neutral-100 focus:border-chilli"
+          />
+          <input
+            type="number"
+            value={nuevoUmbral}
+            onChange={(e) => setNuevoUmbral(parseInt(e.target.value) || 0)}
+            title="Umbral de alerta (piezas)"
+            className="w-24 rounded-md border border-base-700 bg-base-900 px-2 py-1.5 text-sm text-neutral-100"
+          />
+          <button
+            onClick={agregarProducto}
+            disabled={agregando}
+            className="flex items-center gap-2 rounded-md bg-chilli px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+          >
+            <Plus size={14} /> Agregar
+          </button>
+        </div>
+        <p className="mt-1.5 text-xs text-neutral-600">
+          El número junto al nombre es el umbral: cuando la existencia caiga a esa cantidad o menos, se marca como &quot;por agotarse&quot;.
+        </p>
       </Card>
     </div>
   );
