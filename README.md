@@ -6,11 +6,12 @@ Dashboard + Inventario de Cerveza (registro diario, historial, ventas y comparac
 
 1. Entra a https://supabase.com y crea un proyecto nuevo (gratis).
 2. Ve a **SQL Editor** → **New query**.
-3. Copia y pega todo el contenido de `supabase/schema.sql` de este proyecto y dale **Run**.
-   Esto crea las tablas, la vista de comparación y precarga el catálogo de cervezas y actividades.
-4. Ve a **Project Settings → API** y copia:
-   - `Project URL`
-   - `anon public key`
+3. Copia y pega todo el contenido de `supabase/schema.sql` y dale **Run**.
+   Esto crea las tablas de cerveza, la vista de comparación y las actividades del dashboard.
+4. Abre **New query** otra vez, copia y pega todo el contenido de `supabase/schema_fase2.sql` y dale **Run**.
+   Esto agrega Barra, Postres, Material, Personal y Checklists.
+5. Ve a **Settings → Data API** y copia el **Project URL**.
+6. Ve a **Settings → API Keys → pestaña Legacy API Keys** y copia la clave **anon / public**.
 
 ## 2. Subir el código a GitHub
 
@@ -48,12 +49,20 @@ cp .env.example .env.local   # y llena tus llaves de Supabase
 npm run dev
 ```
 
-## Qué incluye esta fase
+## Qué incluye la app
 
 - **Dashboard**: actividades del día (según día de la semana), progreso, alertas de faltantes/sobrantes de cerveza.
-- **Inventario de cerveza**: mismo formato que tu hoja física (Bodega / Cuarto frío / Refrigerador / Barra), suma automática de Total, comparación contra el día anterior, registro de ventas del día, y cálculo automático de **esperado vs. contado** (faltante/sobrante).
-- **Historial**: cada día se guarda como un registro nuevo — nunca se sobreescribe.
+- **Cerveza**: mismo formato que tu hoja física (Bodega / Cuarto frío / Refrigerador / Barra), suma automática de Total, comparación contra el día anterior, registro de ventas del día, y cálculo automático de **esperado vs. contado** (faltante/sobrante).
+- **Barra**: inventario de licores, jarabes, jugos y fresco, con cantidades decimales, agrupado por categoría.
+- **Postres**: inventario por sabor con alerta automática de "pocas piezas" según un umbral configurable.
+- **Material**: platos, tarros, vasos, jarras, tequileros, cristalería y cubiertos, con comparación mensual (roto/perdido/sobrante) una vez que tengas al menos 2 meses de historial.
+- **Personal**: lista de empleados con área y horario, más notas de observación/capacitación/llamada de atención.
+- **Checklists**: apertura, durante el turno y cierre, con progreso diario.
+- **Reportes**: gráficas de los últimos 30 días de cerveza (faltantes/sobrantes por día, cervezas con más diferencias) y exportación a Excel y PDF (impresión).
+- **Historial completo en todo el sistema**: cada día es un registro nuevo — nunca se sobreescribe.
 
-## Próximas fases
+## Próximas mejoras posibles
 
-Barra · Postres · Material (platos/tarros/cristalería) · Personal · Checklists de apertura/cierre · Reportes PDF/Excel · Gráficas mensuales.
+- Gráficas de barra/postres/material en Reportes (una vez tengas más historial acumulado)
+- Sección de Incidencias (cristalería rota, clientes complicados, con fotos)
+- Autenticación (login) si algún día compartes el acceso con más de una persona

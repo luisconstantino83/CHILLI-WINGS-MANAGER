@@ -8,12 +8,12 @@ import clsx from "clsx";
 const items = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, enabled: true },
   { href: "/cerveza", label: "Cerveza", icon: Beer, enabled: true },
-  { href: "/barra", label: "Barra", icon: GlassWater, enabled: false },
-  { href: "/postres", label: "Postres", icon: IceCreamCone, enabled: false },
-  { href: "/material", label: "Material", icon: Boxes, enabled: false },
-  { href: "/personal", label: "Personal", icon: Users, enabled: false },
-  { href: "/checklists", label: "Checklists", icon: ClipboardList, enabled: false },
-  { href: "/reportes", label: "Reportes", icon: FileBarChart, enabled: false },
+  { href: "/barra", label: "Barra", icon: GlassWater, enabled: true },
+  { href: "/postres", label: "Postres", icon: IceCreamCone, enabled: true },
+  { href: "/material", label: "Material", icon: Boxes, enabled: true },
+  { href: "/personal", label: "Personal", icon: Users, enabled: true },
+  { href: "/checklists", label: "Checklists", icon: ClipboardList, enabled: true },
+  { href: "/reportes", label: "Reportes", icon: FileBarChart, enabled: true },
 ];
 
 export default function SideNav() {
@@ -61,7 +61,7 @@ export default function SideNav() {
       </nav>
 
       <div className="mt-auto px-2 text-[11px] text-neutral-600">
-        Fase 1 · Dashboard + Cerveza
+        Chilli Wings Manager Pro
       </div>
     </aside>
   );
